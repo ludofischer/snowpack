@@ -392,6 +392,11 @@ export function appendHtmlToHead(doc: string, htmlToAdd: string) {
   return doc.replace(closingHeadMatch[0], htmlToAdd + closingHeadMatch[0]);
 }
 
+export function isJavaScript(pathname: string): boolean {
+  const ext = path.extname(pathname).toLowerCase();
+  return ext === '.js' || ext === '.mjs' || ext === '.cjs';
+}
+
 export function getExtension(str: string) {
   return path.extname(str).toLowerCase();
 }
