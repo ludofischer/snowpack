@@ -5,8 +5,7 @@ const path = require('path');
 const url = require('url');
 const webpack = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const TerserJSPlugin = require('terser-webpack-plugin');
-const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const ManifestPlugin = require('webpack-manifest-plugin');
 const jsdom = require('jsdom');
 const {JSDOM} = jsdom;
@@ -195,7 +194,7 @@ module.exports = function plugin(config, args = {}) {
   args.outputPattern = args.outputPattern || {};
   const jsOutputPattern = args.outputPattern.js || 'js/[name].[contenthash].js';
   const cssOutputPattern = args.outputPattern.css || 'css/[name].[contenthash].css';
-  const assetsOutputPattern = args.outputPattern.assets || 'assets/[name]-[hash].[ext]';
+  const assetsOutputPattern = args.outputPattern.assets || 'assets/[name]-[contenthash].[ext]';
   if (!jsOutputPattern.endsWith('.js')) {
     throw new Error('Output Pattern for JS must end in .js');
   }
@@ -333,14 +332,7 @@ module.exports = function plugin(config, args = {}) {
             {
               test: /.*/,
               exclude: [/\.js?$/, /\.json?$/, /\.css$/],
-              use: [
-                {
-                  loader: require.resolve('file-loader'),
-                  options: {
-                    name: assetsOutputPattern,
-                  },
-                },
-              ],
+              type: 'asset/resource',
             },
           ],
         },
@@ -352,7 +344,7 @@ module.exports = function plugin(config, args = {}) {
             name: `webpack-runtime`,
           },
           splitChunks: getSplitChunksConfig({numEntries: Object.keys(jsEntries).length}),
-          minimizer: [new TerserJSPlugin({}), new OptimizeCSSAssetsPlugin({})],
+          minimizer: ['...', new CssMinimizerPlugin()],
         },
       };
       const plugins = [
@@ -377,6 +369,7 @@ module.exports = function plugin(config, args = {}) {
           path: buildDirectory,
           publicPath: baseUrl,
           filename: jsOutputPattern,
+          assetModuleFilename: assetsOutputPattern,
         },
       });
       const compiler = webpack(extendedConfig);
@@ -403,6 +396,8 @@ module.exports = function plugin(config, args = {}) {
           resolve(stats);
         });
       });
+
+      compiler.close();
 
       if (extendedConfig.stats !== 'none') {
         console.log(
